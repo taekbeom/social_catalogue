@@ -1,0 +1,19 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="mt-4 justify-content-center">
+    {% for post in posts %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>{{ post.author.user_name }}</h5>
+                <span>{{ post.post_date|date:"Y.m.d G:i" }}</span>
+            </div>
+            <div class="card-body">
+                {% if post.post_material %}
+                    <p>{{ post.post_material }}</p>
+                {% endif %}
+                <p>{{ post.post_message }}</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock content %}

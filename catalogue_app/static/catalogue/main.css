@@ -1,0 +1,141 @@
+.navbar-dark .navbar-nav .nav-link {
+    color: white;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+  color: yellow;
+}
+
+.custom-navbar {
+    background-color: #57BEC4;
+}
+
+.custom-navbar .form-inline {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-toggler:focus,
+.navbar-toggler:active,
+.navbar-toggler-icon:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.custom-search {
+    display: flex;
+    align-items: center;
+}
+
+.custom-search .form-control {
+    margin-left: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.custom-search-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.centered-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+}
+
+.login-form {
+    width: 500px;
+    height: 340px;
+    background-color: #57BEC4;
+    border-radius: 5px;
+    padding: 60px 30px 10px;
+    clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.signup-form {
+    width: 400px;
+    height: 500px;
+    border-radius: 10px;
+    background-color: #57BEC4;
+    padding: 50px 30px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-form .form-check-label,
+.signup-form .form-check-label {
+    white-space: nowrap;
+}
+
+.form-control:focus {
+    border-color: #F1F7A6;
+    box-shadow: 0 0 0 0.2rem #CAD452;
+}
+
+.form-control {
+    border-color: #F1F7A6;
+}
+
+.login-form a:hover,
+.signup-form a:hover {
+    color: yellow;
+}
+
+.login-form button,
+.login-form button.active,
+.login-form button:focus,
+.signup-form button,
+.signup-form button.active,
+.signup-form button:focus {
+    display: block;
+    margin: 0 auto;
+    background-color: #BAC349;
+    border: 2px solid #F1F7A6;
+    color: black;
+    box-shadow: none;
+}
+
+.login-form button:active:focus,
+.signup-form button:active:focus {
+    background-color: #8E923F;
+    color: white;
+    border: 2px solid #797D22;
+    box-shadow: 0 0 0 0.2rem #CAD452;
+}
+
+.login-form button:hover,
+.signup-form button:hover {
+    background-color: #8E923F;
+    color: white;
+    border: 2px solid #797D22;
+    box-shadow: none;
+}
+
+.login-form .form-check-input,
+.signup-form .form-check-input {
+    box-shadow: none;
+    border: 1px solid #F1F7A6;
+}
+
+.login-form .form-check-input:checked,
+.signup-form .form-check-input:checked {
+    background-color: #BAC349;
+}
+
+.card-custom {
+    display: inline-block;
+    vertical-align: top;
+    margin: 10px auto;
+}
+
+.container-news {
+    max-width: 1200px;
+}
