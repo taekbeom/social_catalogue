@@ -84,10 +84,10 @@ WSGI_APPLICATION = 'social_catalogue.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'social_network_db',
-        'USER': 'postgres',
-        'PASSWORD': 'taek123',
-        'HOST': 'localhost',
+        'NAME': 'db_name',
+        'USER': 'db_user',
+        'PASSWORD': 'db_password',
+        'HOST': 'db_host',
         'PORT': '',
     }
 }
