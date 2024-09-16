@@ -1,0 +1,360 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+{% if active %}
+    <div class="container-profile ">
+        <div class="card card-profile ">
+            <div class="card-body">
+                {% if cur_user %}
+                    <form method="get" action="{% url 'app_edit_profile' profile_id %}">
+                        <button type="submit" class="btn btn-secondary" style="float: right;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </form>
+                {% endif %}
+                <div class="mb-2" style="text-align: center;  padding: 0 50px;">
+                    <h3 class="mt-3 mb-3">{{ p_user.username }}</h3>
+                  <div class="position-relative">
+                    <img id="edit_image_preview" src="{% if profile_pic %}{{ MEDIA_URL }}profile_pics/{{ profile_pic }}{% else %}https://via.placeholder.com/150{% endif %}" alt="img" class="img-thumbnail edit-control" style="width: 150px; height: 150px; object-fit: cover;" />
+                  </div>
+                    {% if description %}
+                        <p>{{ description }}</p>
+                    {% endif %}
+                        <p class="text-muted">Member since: {{ date|date:"Y.m.d" }}</p>
+                </div>
+                {% if not cur_user %}
+                    <div class="icon-container mb-4 d-flex justify-content-between">
+                        <form method="get" action="{% url 'app_check_friends' profile_id=profile_id user1=user.id user2=p_user.id %}">
+                            <button type="submit" class="btn {{btn_display.1}} mr-4"
+                                    onclick="{% if starred %}return confirm('User will be unfollowed')
+                                            {% elif blocked %}return confirm('User will be removed from blocklist'){% endif %}">
+                                <i class="fas {{btn_display.0}}"></i>
+                            </button>
+                        </form>
+                        <form method="get" action="{% url 'app_check_star' profile_id=profile_id user1=user.id user2=p_user.id %}">
+                            {% if friend %}
+                                <button type="submit" class="btn btn-secondary mr-4" disabled>
+                                    <i class="fa-regular fa-star"></i>
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn {{btn_display_star}} mr-4"
+                                        onclick="{% if blocked %}return confirm('User will be removed from blocklist'){% endif %}">
+                                    <i class="fa-solid fa-star"></i>
+                                </button>
+                            {% endif %}
+                        </form>
+                        <form method="get" action="{% url 'app_check_block' profile_id=profile_id user1=user.id user2=p_user.id %}">
+                            <button type="submit" class="btn {{btn_display_block}} mr-4"
+                                    onclick="{% if friend %}return confirm('User will be removed from friends')
+                                            {% elif starred %}return confirm('User will be unfollowed')
+                                            {% elif blocked %}return confirm('User will be unblocked')
+                                            {% else %}return confirm('User will be blocked'){% endif %}">
+                                <i class="fa fa-ban"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+                <div class="text-left" style="padding: 0 50px 30px;">
+                    <p><a href="{% url 'app_friend_list' profile_id %}">Friend List</a></p>
+                    {% if not private and not blocked_out or cur_user or accept_friend %}
+                        <p><a href="{% url 'app_lists' profile_id %}">Catalogue Lists</a></p>
+                    {% endif %}
+                    {% if cur_user %}
+                        <p><a href="{% url 'app_history' user.profile_set.first.id %}">History</a></p>
+                        <div class="mb-3">
+                            <a href="{% url 'app_notifications' user.profile_set.first.id %}">Notifications</a>
+                            {% if notifications_count %}
+                                <span class="btn btn-danger" style="margin-left: 5px; padding: 0 5px;">{{ notifications_count }}</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="container container-profile-action d-flex justify-content-between align-items-end">
+                    <span class="text-muted">{% if private %}Private{% else %}Open{% endif %} profile</span>
+                    <div>
+                        {% if cur_user %}
+                        <form method="post" action="{% url 'delete_user' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" style="font-size: 13px;"
+                                    onclick="return confirm('Are you sure you want to delete user?')">Delete profile
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if not private and not blocked_out or cur_user or accept_friend %}
+            <div class="card card-profile">
+                <div class="card-body">
+                    {% for ec in entry_category_counts %}
+                        <h3 style="text-align: center; text-transform: capitalize;">{{ ec.0 }} List</h3>
+                            <div class="row mt-4 mb-5 text-center">
+                                {% for list in lists %}
+                                    {% if list.0 == ec.0 %}
+                                        <div class="col-3">
+                                            <span class="list-item-dot" style="color: {{ list.3 }};"></span>
+                                            <span class="reduce-text-size" style="margin-left: 2px;">{{ list.1 }}</span>
+                                            <span class="reduce-text-size" style="margin-left: 5px;">{{ list.2 }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% if not private and not blocked_out or cur_user or accept_friend %}
+        {% if not closed or cur_user %}
+            <div class="container">
+                <div class="card card-custom-post">
+                    <div class="card-body">
+                        <form id="post-form" novalidate method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <input type="hidden" name="post_value_upload" value="{% if post_var %}{{ post_var.id }}{% endif %}">
+                                <input type="hidden" name="post_reply" value="{% if post_reply %}{{ post_reply }}{% endif %}">
+                                <input type="hidden" name="post_display_reply" value="{% if post_display_reply %}{{ post_display_reply }}{% endif %}">
+                                {% if post_display_reply %}
+                                    <button type="button" class="btn" onclick="highlightPost('{{ post_reply }}')">Reply</button>
+                                {% endif %}
+                                <textarea id="post_message" placeholder="Text" class="form-control edit-control"
+                                          name="post_message" style="resize: none;"
+                                          cols="10" rows="5">{% if post_var.message %}{{ post_var.message }}{% endif %}</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="row align-items-center">
+                                        <div class="ml-auto d-flex align-items-center">
+                                            <input type="file" id="upload_image" name="upload_image" class="form-control d-none"/>
+                                            <label for="upload_image" class="btn btn-secondary mt-2 text-center" style="width: 150px; height: 40px;">Choose Image</label>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div id="image-name" class="text-muted">{% if post_var.material %}{{ post_var.material }}{% endif %}</div>
+                                            <input type="hidden" id="material-value" name="material" value="{% if post_var.material %}{{ post_var.material }}{% endif %}">
+                                            {% if post_var.material %}
+                                                <button type="button" class="btn remove-button" style="color: red;">
+                                                    <i class="fa fa-remove"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if not image_is_valid %}
+                                        <div class="text-danger">Invalid Image</div>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-2 col-6">
+                                    <button type="submit" name="submit-btn" value="button-upload" class="btn btn-primary btn-block float-end">Save</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <h3 class="text-muted text-center">Posts are closed</h3>
+        {% endif %}
+        <div class="mt-4">
+            {% for post in posts_page.object_list %}
+                <div class="card card-custom-comment mb-4" id="post-{{ post.7 }}">
+                    <div class="row g-0">
+                        <div class="col-2" style="margin: auto;">
+                            <img src="{{ MEDIA_URL }}profile_pics/{% if post.4 %}{{ post.4 }}{% else %}default.jpg{% endif %}"
+                                 class="img-fluid circle img-thumbnail rounded-circle" style="width: 100px;" alt="img">
+                        </div>
+                        <div class="col-10" style="border-left: 1px solid #ced4da;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <a href="{% if post.5 %}{% url 'app_profile' post.5 %}{% else %}#{% endif %}"
+                                   style="color: black; text-decoration: none;">
+                                    <h5 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{% if post.3 %}{{ post.3 }}{% else %}Deleted{% endif %}</h5>
+                                </a>
+                                <div class="d-flex align-items-center">
+                                    {% if user.id == post.6 %}
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="post_value_edit" value="{{ post.7 }}">
+                                            <button type="submit" name="submit-btn" value="button-edit" class="btn edit-button"
+                                                    style="padding: 0; margin-right: 5px;">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    {% if user.id == p_user.id or user.id == post.6 %}
+                                        <form method="post" action="{% url 'app_delete_post' profile_id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="post_value" value="{{ post.7 }}">
+                                            <button type="submit" class="btn" style="padding: 0; margin-right: 20px; color: red;"
+                                                onclick="return confirm('Are you sure you want to delete post?')">
+                                                <i class="fa fa-remove"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <span class="text-muted">{{ post.2|date:"Y.m.d G:i" }}</span>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="post_value_display_reply" value="{{ post.7 }}">
+                                        <button type="submit" class="btn" name="submit-btn" value="button-reply" style="padding: 0; margin-left: 20px;">
+                                            <i class="fa fa-reply"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% if post.0 %}
+                                    <p id="post-content" class="text-limit">{{ post.0|linebreaksbr }}</p>
+                                {% endif %}
+                                {% if post.1 %}
+                                    <img src="{{ MEDIA_URL }}posts/{{ post.1 }}" class="img-post" alt="material">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% for k, posts_reply in posts_replies %}
+                    {% if k == post.7 %}
+                        {% for post_reply in posts_reply %}
+                        <div style="margin-left: 10%;">
+                            <div class="card card-custom-comment mb-4" id="post-{{ post_reply.7 }}">
+                                <div class="row g-0">
+                                    <div class="col-2" style="margin: auto;">
+                                        <img src="{{ MEDIA_URL }}profile_pics/{% if post_reply.4 %}{{ post_reply.4 }}{% else %}default.jpg{% endif %}"
+                                             class="img-fluid circle img-thumbnail rounded-circle" style="width: 100px;" alt="img">
+                                    </div>
+                                    <div class="col-10" style="border-left: 1px solid #ced4da;">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <a href="{% if post_reply.5 %}{% url 'app_profile' post_reply.5 %}{% else %}#{% endif %}"
+                                               style="color: black; text-decoration: none;">
+                                                <h5 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{% if post_reply.3 %}{{ post_reply.3 }}{% else %}Deleted{% endif %}</h5>
+                                            </a>
+                                            <div class="d-flex align-items-center">
+                                                {% if user.id == post_reply.6 %}
+                                                    <form method="post">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="post_value_edit" value="{{ post_reply.7 }}">
+                                                        <button type="submit" name="submit-btn" value="button-edit" class="btn edit-button"
+                                                                style="padding: 0; margin-right: 5px;">
+                                                            <i class="fa fa-edit"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                {% if user.id == p_user.id or user.id == post_reply.6 %}
+                                                    <form method="post" action="{% url 'app_delete_post' profile_id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="post_value" value="{{ post_reply.7 }}">
+                                                        <button type="submit" class="btn" style="padding: 0; margin-right: 20px; color: red;"
+                                                            onclick="return confirm('Are you sure you want to delete post?')">
+                                                            <i class="fa fa-remove"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                <span class="text-muted">{{ post_reply.2|date:"Y.m.d G:i" }}</span>
+                                                <form method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="post_value_reply" value="{{ post_reply.7 }}">
+                                                    <input type="hidden" name="post_value_display_reply" value="{{ post.7 }}">
+                                                    <button type="submit" class="btn" name="submit-btn" value="button-reply" style="padding: 0; margin-left: 20px;">
+                                                        <i class="fa fa-reply"></i>
+                                                    </button>
+                                                </form>
+                                                {% if post_reply.8 %}
+                                                    <button type="button" class="btn" style="padding: 0;" onclick="highlightPost('{{ post_reply.8 }}')">to</button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if post_reply.0 %}
+                                                <p id="post-content" class="text-limit">{{ post_reply.0|linebreaksbr }}</p>
+                                            {% endif %}
+                                            {% if post_reply.1 %}
+                                                <img src="{{ MEDIA_URL }}posts/{{ post_reply.1 }}" class="img-post" alt="material">
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="container container-rest-news mt-4">
+            <div class="pagination bold-font">
+                <span class="step-links">
+                    {% if posts_page.has_previous %}
+                        <a href="?page=1" class="btn btn-outline-info mb-4">1</a>
+                        <a href="?page={{ posts_page.previous_page_number }}" class="btn btn-outline-info mb-4">Previous</a>
+                    {% endif %}
+                    {% for num in posts_page.paginator.page_range %}
+                        {% if posts_page.number == num %}
+                            <a href="?page={{ num }}" class="btn btn-info mb-4">{{ num }}</a>
+                        {% elif num > posts_page.number|add:'-3' and num < posts_page.number|add:'3' and num != 1 and num != posts_page.paginator.num_pages %}
+                            <a href="?page={{ num }}" class="btn btn-outline-info mb-4">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if posts_page.has_next %}
+                        <a href="?page={{ posts_page.next_page_number }}" class="btn btn-outline-info mb-4">Next</a>
+                        <a href="?page={{ posts_page.paginator.num_pages }}" class="btn btn-outline-info mb-4">{{ posts_page.paginator.num_pages }}</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    {% endif %}
+{% elif cur_user %}
+    <a href="{% url 'app_edit_profile' profile_id %}"><h3 class="mt-2">Recover profile</h3></a>
+{% else %}
+    <h3 class="mt-2">User profile was deleted</h3>
+{% endif %}
+<script>
+document.getElementById("upload_image").addEventListener("change", function() {
+    var fileName = this.files[0].name;
+    document.getElementById("image-name").textContent = fileName;
+});
+document.addEventListener("DOMContentLoaded", function() {
+    const removeButton = document.querySelector('.remove-button');
+
+    removeButton.addEventListener('click', function() {
+        document.getElementById('image-name').innerHTML = '';
+        document.getElementById('material-value').value = '';
+        removeButton.style.display = 'none';
+    });
+});
+function scrollToForm() {
+    var form = document.getElementById('post-form');
+    var postMessage = document.getElementById("post_message").value;
+    var materialValue = document.getElementById("material-value").value;
+    if (materialValue != '' || postMessage != '') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start'});
+    }
+}
+window.addEventListener('load', scrollToForm);
+const postContents = document.querySelectorAll('#post-content');
+postContents.forEach((postContent) => {
+    const showMoreBtn = document.createElement('span');
+    showMoreBtn.textContent = 'Show full';
+    showMoreBtn.style.color = 'blue';
+    showMoreBtn.className = 'show-more-btn';
+    postContent.parentNode.insertBefore(showMoreBtn, postContent.nextSibling);
+    if (postContent.scrollHeight <= postContent.clientHeight) {
+        showMoreBtn.style.display = 'none';
+    }
+    showMoreBtn.addEventListener('click', () => {
+        postContent.style.overflow = 'visible';
+        postContent.style.textOverflow = 'clip';
+        postContent.style.webkitLineClamp = 'unset';
+        postContent.style.height = 'auto';
+        showMoreBtn.style.display = 'none';
+    });
+});
+    function highlightPost(postId) {
+        var postElement = document.getElementById('post-' + postId);
+        postElement.style.backgroundColor = 'yellow';
+
+        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(function() {
+            postElement.style.backgroundColor = '';
+        }, 1000);
+    }
+</script>
+{% endblock content %}

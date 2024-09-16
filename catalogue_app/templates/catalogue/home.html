@@ -1,17 +1,100 @@
 {% extends "catalogue/base.html" %}
 {% block content %}
+    {% if authenticated %}
+    <div class="mt-1 d-flex justify-content-center">
+        <form method="post" action="{% url 'app_hide_recs' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">
+                {% if recs %}hide{% else %}show recommendations{% endif %}</button>
+        </form>
+    </div>
+    {% endif %}
+<div class="container-recs-wrapper">
+
+{% if recs %}
+    {% if rec_users_items %}
+    {% for key, val in rec_users_items %}
+        <div class="container container-recs">
+            <a class="user-name-link" href="{% url 'app_profile' key.0 %}">{{ key.1 }}</a>
+            <div class="circular-bars">
+            {% for v in val %}
+                    <div class="progress-bar pr-{{ forloop.counter }}" style="background:radial-gradient(closest-side, white 79%, transparent 80% 100%),
+                        conic-gradient({{ v.3 }} {{ v.2 }}%, transparent 0);">
+                        <progress style="visibility:hidden;height:0;width:0;"></progress>
+                    </div>
+            {% endfor %}
+            </div>
+            <div>
+                {% for v in val %}
+                    <div class="d-flex justify-content-between align-items-center" style="gap: 10px;">
+                        <span>{{ v.1 }}</span>
+                        <span>{{ v.2 }}%</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+    {% else %}
+        <h5>No recommendations</h5>
+    {% endif %}
+{% endif %}
+</div>
+    {% if user.user_role.role_name == 'admin' or user.user_role.role_name == 'moderator' %}
+        <form method="get" action="{% url 'app_add_news' %}">
+            <button type="submit" class="btn btn-success" style="float: right; margin-right: -10px;">
+                <i class="fa fa-plus"></i>
+            </button>
+        </form>
+    {% endif %}
     <div class="container-fluid mt-4">
         <div class="row justify-content-center align-items-center">
             {% for news in news_list %}
                 <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
-                    <div class="card border-dark text-center" style="height: 240px;">
+                    <div class="card border-dark text-center card-custom-bg">
                         <div class="card-body d-flex flex-column justify-content-between">
-                            <h5 class="card-title"><a href="#">{{ news.news_title }}</a></h5>
-                            <p class="card-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ news.news_message }}</p>
+                            <a href="{% url 'app_news' news.id %}" style="color: black;"><h5 class="card-title"
+                                    style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{{ news.title }}</h5></a>
+                            <img class="img-news" src="{{MEDIA_URL}}news/{{news.image}}" alt="img" loading="lazy"/>
+                            <p class="card-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ news.message }}</p>
                         </div>
                     </div>
                 </div>
             {% endfor %}
+        </div>
+    </div>
+    <div class="container container-rest-news">
+        <table class="table">
+            <tbody>
+                {% for news in rest_news_page.object_list %}
+                    <tr>
+                        <td class="news-item">
+                            <span class="title"><a href="{% url 'app_news' news.id %}">{{ news.title }}</a>: </span>
+                            <span class="message">{{ news.message }}</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="container container-rest-news mt-4">
+        <div class="pagination bold-font">
+            <span class="step-links">
+                {% if rest_news_page.has_previous %}
+                    <a href="?page=1" class="btn btn-outline-info mb-4">1</a>
+                    <a href="?page={{ rest_news_page.previous_page_number }}" class="btn btn-outline-info mb-4">Previous</a>
+                {% endif %}
+                {% for num in rest_news_page.paginator.page_range %}
+                    {% if rest_news_page.number == num %}
+                        <a href="?page={{ num }}" class="btn btn-info mb-4">{{ num }}</a>
+                    {% elif num > rest_news_page.number|add:'-3' and num < rest_news_page.number|add:'3' and num != 1 and num != rest_news_page.paginator.num_pages %}
+                        <a href="?page={{ num }}" class="btn btn-outline-info mb-4">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if rest_news_page.has_next %}
+                    <a href="?page={{ rest_news_page.next_page_number }}" class="btn btn-outline-info mb-4">Next</a>
+                    <a href="?page={{ rest_news_page.paginator.num_pages }}" class="btn btn-outline-info mb-4">{{ rest_news_page.paginator.num_pages }}</a>
+                {% endif %}
+            </span>
         </div>
     </div>
 {% endblock content %}

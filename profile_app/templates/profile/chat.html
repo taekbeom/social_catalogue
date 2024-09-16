@@ -1,0 +1,37 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+    <div class="container">
+        <div class="row row-chat">
+            <!-- Chat list column -->
+            <div class="col-md-3">
+                <div class="chat-list">
+                    <!-- Sample chat list items -->
+                    <div class="chat">John Doe</div>
+                    <div class="chat">Jane Smith</div>
+                    <!-- Add more chat list items dynamically -->
+                </div>
+            </div>
+            <!-- Chat area column -->
+            <div class="col-md-9">
+                <div class="chat-area">
+                    <!-- Sample chat messages -->
+                    <div class="chat">
+                        <div class="message-header">
+                            <span class="sender-name">John Doe</span>
+                            <span class="message-date">April 11, 2024</span>
+                            <span class="reply-icon">&#8617;</span>
+                        </div>
+                        <div class="message-body">Sample message content goes here</div>
+                    </div>
+                    <!-- Add more chat messages dynamically -->
+                </div>
+                <!-- Message input and send button -->
+                    <div class="clearfix">
+                        <input type="text" class="message-input" style="float:left;width: calc(85% - 5px); margin-right: 5px; height: 50px;" placeholder="Type your message here...">
+                        <button class="send-button" style="float:left;width: calc(15% - 5px); margin-left: 5px; height: 50px;">Send</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

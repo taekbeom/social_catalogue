@@ -1,0 +1,759 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="container-edit">
+    <div class="card border-dark card-edit edit-form mt-4">
+        <form novalidate onsubmit="return confirmSubmit();" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="d-flex justify-content-between">
+                <h5>Entry add form</h5>
+                {% if edit_entry %}
+                    <button type="submit" class="btn btn-danger" name="btn-submit" value="btn-delete"
+                            onclick="return confirm('Delete entry?')">Delete</button>
+                {% endif %}
+            </div>
+
+            <div class="mb-5">
+                <label for="edit_title" style="display: inline-block;">Title</label>
+                <input type="text" id="edit_title" placeholder="Title" class="form-control edit-control"
+                       name="{{ e_form.title.name }}" value="{{ e_form.title.value|default:'' }}"  />
+                {% for error in e_form.title.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5">
+                <label for="edit_alt_title" style="display: inline-block;">Alternative titles</label>
+                <button type="button" id="toggle-button-titles" style="background-color: transparent; border: none;">
+                    <i class="fas fa-plus" id="toggle-icon-titles" style="color: red;"></i>
+                </button>
+                <textarea id="edit_alt_title" placeholder="Alternative titles" class="form-control edit-control"
+                          name="{{ e_form.alt_title.name }}" style="resize: none; display: none;"
+                          cols="10" rows="3">{{ e_form.alt_title.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="date-selection" style="display: inline-block;">Date</label>
+                <select id="date-selection" name="{{ e_form.date_selection.name }}" class="form-control edit-control" style="width: 250px;">
+                    <option selected disabled hidden>Select date</option>
+                    {% if e_form.date_selection.value == 'confirmed' %}
+                        <option selected value="confirmed">Exact date is confirmed</option>
+                    {% else %}
+                        <option value="confirmed">Exact date is confirmed</option>
+                    {% endif %}
+                    {% if e_form.date_selection.value == 'planned' %}
+                        <option selected value="planned">Only planned date</option>
+                    {% else %}
+                        <option value="planned">Only planned date</option>
+                    {% endif %}
+                    {% if e_form.date_selection.value == 'nothing' %}
+                        <option selected value="nothing">Nothing confirmed</option>
+                    {% else %}
+                        <option value="nothing">Nothing confirmed</option>
+                    {% endif %}
+                </select>
+            </div>
+            {% for error in e_form.date_selection.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+
+            <div class="justify-content-between text-align-center" style="padding-left: 5%; padding-right: 5%; display: none;" id="confirmed-dates">
+                <div style="width: calc(50% - 10px);">
+                    <label for="entry-add-date" style="display: inline-block;">Started on</label>
+                    <input placeholder="Start date" class="form-control edit-control" type="text" onfocus="(this.type='date')"
+                           onblur="(this.type='text')" id="entry-add-date"
+                           name="{{ e_form.add_date.name }}" value="{{ add_date|date:'Y-m-d'|default:'' }}"/>
+                </div>
+                <div style="width: calc(50% - 10px);">
+                    <label for="entry-finish-date" style="display: inline-block;">Finished on</label>
+                    <button type="button" id="toggle-button-fin-date" style="background-color: transparent; border: none; padding-top: 0; padding-bottom: 0;">
+                        <i class="fas fa-plus" id="toggle-icon-date" style="color: red;"></i>
+                    </button>
+                    <input placeholder="End date" class="form-control edit-control" type="text" onfocus="(this.type='date')"
+                           onblur="(this.type='text')" id="entry-finish-date" style="display: none;"
+                           name="{{ e_form.fin_date.name }}" value="{{ fin_date|date:'Y-m-d'|default:'' }}"/>
+                </div>
+            </div>
+            <div style="padding-left: 5%; padding-right: 5%; display: none;" id="confirmed-dates-error">
+                {% if error_add_date %}
+                    <div class="text-danger">{{ error_add_date }}</div>
+                {% endif %}
+                {% for error in e_form.fin_date.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div style="display: none;" id="planned-dates">
+                <label for="year-select" style="display: inline-block; margin-right: 10px;">Year</label>
+                <select id="year-select" class="form-control edit-control" style="width: 100px;"
+                        name="{{ e_form.plan_date.name }}">
+                    {% for year in range %}
+                        {% if plan_date and year == plan_date %}
+                            <option selected value="{{ year }}">{{ year }}</option>
+                        {% else %}
+                            <option value="{{ year }}">{{ year }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mt-5 mb-3 d-flex justify-content-left">
+                <div style="padding-right: 5px;">
+                    <label for="category-selection" style="display: inline-block;">Category</label>
+                    <select id="category-selection" name="category-selection" class="form-control edit-control">
+                        <option selected disabled hidden>Select category</option>
+                        {% for category in categories %}
+                            {% if entry_category and entry_category == category.0 %}
+                                <option selected value="{{ category.0 }}">{{ category.1 }}</option>
+                            {% else %}
+                                <option value="{{ category.0 }}">{{ category.1 }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="type-selection-div" style="padding-left: 5px; display: none;">
+                    <label for="type-selection" style="display: inline-block;">Type</label>
+                    <select id="type-selection" class="form-control edit-control" name="{{ e_form.entry_type.name }}">
+                        <option selected disabled hidden>Select type</option>
+                        {% for type in types %}
+                            {% if entry_type_val and entry_type_val == type.0 %}
+                                <option selected value="{{ type.0 }}" data-category-id="{{ type.2 }}">{{ type.1 }}</option>
+                            {% else %}
+                                <option value="{{ type.0 }}" data-category-id="{{ type.2 }}">{{ type.1 }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <p>Episodes</p>
+            </div>
+
+            <div class="mt-1 mb-3 d-flex justify-content-left">
+                <div style="width: 150px; padding-right: 15px;">
+                    <label for="total-episodes" style="display: inline-block;">Total</label>
+                    <button type="button" id="toggle-button-total-episodes"
+                            style="background-color: transparent; border: none; padding-top: 0; padding-bottom: 0; padding-right: 0;">
+                        <i class="fas fa-plus" id="toggle-icon-total-ep" style="color: red;"></i>
+                    </button>
+                    <input placeholder="Total" class="form-control edit-control" type="number" min="0" id="total-episodes" style="display: none;"
+                        name="{{ e_form.total_parts.name }}" value="{{ e_form.total_parts.value|default:'' }}"/>
+                </div>
+                <div style="width: 150px; padding-left: 15px;">
+                    <label for="current-episodes" style="display: inline-block;">Current</label>
+                    <button type="button" id="toggle-button-current-episodes"
+                            style="background-color: transparent; border: none; padding-top: 0; padding-bottom: 0; padding-right: 0;">
+                        <i class="fas fa-plus" id="toggle-icon-cur-ep" style="color: red;"></i>
+                    </button>
+                    <input placeholder="Current" class="form-control edit-control" type="number" min="0" id="current-episodes" style="display: none;"
+                        name="{{ e_form.cur_parts.name }}" value="{{ e_form.cur_parts.value|default:'' }}"/>
+                </div>
+            </div>
+            {% for error in e_form.total_parts.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+
+            <div class="mt-5 mb-3 d-flex justify-content-left">
+                <div style="width: 200px;">
+                    <label for="country" style="display: inline-block;">Country</label>
+                    <input placeholder="Country" class="form-control edit-control" type="text" id="country"
+                        name="{{ e_form.country.name }}" value="{{ e_form.country.value|default:'' }}"/>
+                </div>
+            </div>
+
+            <div class="mt-5 mb-3 d-flex justify-content-left">
+                <div style="width: 200px;">
+                    <label for="production" style="display: inline-block;">Production</label>
+                    <input placeholder="Production" class="form-control edit-control" type="text" id="production"
+                        name="{{ e_form.production.name }}" value="{{ e_form.production.value|default:'' }}"/>
+                </div>
+            </div>
+
+            <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/js/multi-select-tag.js"></script>
+            <div class="row mt-4 d-flex align-items-left">
+                <div style="width: 100%;">
+                    <label for="tag-list">Tags</label>
+                    <select name="tag-list" id="tag-list" multiple>
+                        {% for tag in tags %}
+                            {% if tag.0 in tags_selected %}
+                                <option selected value="{{ tag.0 }}">{{ tag.1 }}</option>
+                            {% else %}
+                                <option value="{{ tag.0 }}">{{ tag.1 }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-5 mb-5">
+                <label for="edit_description" style="display: inline-block;">Description</label>
+                <button type="button" id="toggle-button-desc" style="background-color: transparent; border: none;">
+                    <i class="fas fa-plus" id="toggle-icon-description" style="color: red;"></i>
+                </button>
+                <textarea id="edit_description" placeholder="Description" class="form-control edit-control"
+                          name="{{ e_form.description.name }}" style="resize: none; display: none;"
+                          cols="10" rows="3">{{ e_form.description.value|default:'' }}</textarea>
+                {% for error in e_form.description.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {% if add_entry_form %}
+
+            <div id="authors-container">
+                <div class="mb-3 d-flex justify-content-left author-fields" id="author-field-1">
+                    <div style="width: 300px;">
+                        <label for="author-input-1">Author</label>
+                        <input autocomplete="off" list="author-select" placeholder="Author" id="author-input-1" name="author-input-1" class="form-control edit-control" style="width: 100%;">
+                        <datalist id="author-select">
+                            <option>Not in list</option>
+                            {% for author in authors %}
+                                <option value="{{ author.1 }}" data-value="{{ author.0 }}"></option>
+                            {% endfor %}
+                        </datalist>
+                        <input type="hidden" id="author-input-1-hidden" name="author-hidden-1">
+                        <div style="align-self: flex-end;">
+                            <button type="button" onclick="addAuthorField()" style="background-color: transparent; border: none;">
+                                <i class="fas fa-plus" style="color: green;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="add-new-author-1" style="padding-left: 15px; display: none;">
+                        <label for="new-author-1" style="display: inline-block;">New author</label>
+                        <input placeholder="New author" class="form-control edit-control" type="text" id="new-author-1" name="new-author-1"/>
+                    </div>
+                    <div id="author-roles-container-1" style="padding-left: 15px;">
+                        <div class="role-field">
+                            <label for="author-role-1-1" style="display: inline-block;">Author role</label>
+                            <input placeholder="Author role" class="form-control edit-control" type="text" id="author-role-1-1" name="author-role-1-1"/>
+                        </div>
+                        <div style="align-self: flex-end; padding-bottom: 5px;">
+                            <button type="button" onclick="addAuthorRoleField(1)" style="background-color: transparent; border: none;">
+                                <i class="fas fa-plus" style="color: green;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div id="authors-container2">
+                {% for author_selected in authors_selected %}
+                    <div class="mb-3 d-flex justify-content-left author-fields" id="author-field-{{ forloop.counter }}" data-predefined-value="{{ author_selected.0 }}" data-predefined-name="{{ author_selected.3 }}">
+                        <div style="width: 300px;">
+                            <label for="author-input-{{ forloop.counter }}">Author</label>
+                            <input autocomplete="off" list="author-select" placeholder="Author" id="author-input-{{ forloop.counter }}" name="author-input-{{ forloop.counter }}" class="form-control edit-control" style="width: 100%;">
+                            <datalist id="author-select">
+                                <option>Not in list</option>
+                                {% for author in authors %}
+                                    <option value="{{ author.1 }}" data-value="{{ author.0 }}"></option>
+                                {% endfor %}
+                            </datalist>
+                            <input type="hidden" id="author-input-{{ forloop.counter }}-hidden" name="author-hidden-{{ forloop.counter }}">
+                        </div>
+                        <div id="add-new-author-{{ forloop.counter }}" style="padding-left: 15px;">
+                            <label for="new-author-{{ forloop.counter }}" style="display: inline-block;">New author</label>
+                            <input placeholder="New author" class="form-control edit-control" type="text" id="new-author-{{ forloop.counter }}"
+                                   name="new-author-{{ forloop.counter }}" value="{% if author_selected.1 %}{{ author_selected.1 }}{% endif %}"/>
+                        </div>
+                        <div id="author-roles-container-{{ forloop.counter }}" style="padding-left: 15px;">
+                            {% for author_role in author_selected.2 %}
+                                <div class="role-field">
+                                    <label for="author-role-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" style="display: inline-block;">Author role</label>
+                                    <input placeholder="Author role" class="form-control edit-control" type="text" value="{% if author_role %}{{ author_role }}{% endif %}" id="author-role-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" name="author-role-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"/>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="mt-3 mb-1 d-flex justify-content-left">
+                <div style="width: 400px;">
+                    <label for="franchise-select">Franchise</label>
+                    <button type="button" id="toggle-button-franchise" style="background-color: transparent; border: none;">
+                        <i class="fas fa-plus" id="toggle-icon-franchise" style="color: red;"></i>
+                    </button>
+                    <input autocomplete="off" id="franchise-input" list="franchise-select" placeholder="Franchise"
+                           class="form-control edit-control" style="width: 100%; display: none;" name="franchise-input"
+                           value="{{ franchise_name|default:'' }}">
+                    <datalist id="franchise-select">
+                        <option>Not in list</option>
+                        {% for franchise in franchises %}
+                            <option value="{{ franchise.1 }}" data-value="{{ franchise.0 }}"></option>
+                        {% endfor %}
+                    </datalist>
+                    <input hidden="hidden" id="franchise-input-hidden" name="franchise-hidden"
+                           value="{% if franchise_id %}{{ franchise_id }}{% endif %}">
+                </div>
+            </div>
+            <div id="add-new-franchise" style="padding-left: 15px; display: none;">
+                <label for="new-franchise" style="display: inline-block;">New franchise</label>
+                <input placeholder="New franchise" class="form-control edit-control" type="text" id="new-franchise"
+                       name="new-franchise" value="{{ new_franchise_name|default:'' }}"/>
+            </div>
+
+
+            <div class="mt-5 mb-5 col-4" style="width: 300px;">
+                <div class="row">
+                    <div class="ml-auto d-flex align-items-center">
+                        <input type="file" id="upload_image" name="upload_image" class="form-control d-none"/>
+                        <label for="upload_image" class="btn btn-primary mt-2 text-center" style="width: 150px; height: 40px;">Choose Image</label>
+                    </div>
+                    <div id="image-name" class="text-muted"></div>
+                </div>
+                {% if not image_is_valid %}
+                    <div class="text-danger">Invalid Image</div>
+                {% endif %}
+            </div>
+
+            {% if edit_entry %}
+                <div class="position-relative p-1">
+                    <img id="edit_image_preview" src="{{ MEDIA_URL }}catalogue/{{ cover_img }}"
+                         alt="img" class="img-thumbnail edit-control" style="width: 300px;" />
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-block" name="btn-submit" value="btn-save"
+                    style="margin: 0 auto;">Save</button>
+        </form>
+    </div>
+</div>
+<script>
+    new MultiSelectTag('tag-list')
+    document.getElementById("upload_image").addEventListener("change", function() {
+        var fileName = this.files[0].name;
+        document.getElementById("image-name").textContent = fileName;
+    });
+document.addEventListener('DOMContentLoaded', function() {
+    var dateSelection = document.getElementById('date-selection');
+    var confirmedDates = document.getElementById('confirmed-dates');
+    var confirmedDatesError = document.getElementById('confirmed-dates-error');
+    var plannedDates = document.getElementById('planned-dates');
+    var addDate = document.getElementById('entry-add-date');
+    var finishDate = document.getElementById('entry-finish-date');
+    var planDate = document.getElementById('year-select');
+
+    function updateDisplay() {
+        var selectedValue = dateSelection.value;
+        confirmedDates.style.display = 'flex';
+
+        if (selectedValue == 'confirmed') {
+            confirmedDates.style.display = 'flex';
+            confirmedDatesError.style.display = 'flex';
+            plannedDates.style.display = 'none';
+            planDate.selectedIndex = 0;
+        } else if (selectedValue == 'planned') {
+            confirmedDates.style.display = 'none';
+            confirmedDatesError.style.display = 'none';
+            plannedDates.style.display = 'flex';
+            addDate.value = '';
+            finishDate.value = '';
+        } else {
+            confirmedDates.style.display = 'none';
+            confirmedDatesError.style.display = 'none';
+            plannedDates.style.display = 'none';
+            addDate.value = '';
+            finishDate.value = '';
+            planDate.selectedIndex = 0;
+        }
+    }
+
+    updateDisplay();
+
+    dateSelection.addEventListener('change', updateDisplay);
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var entryTitles = document.getElementById('edit_alt_title');
+    var toggleIcon = document.getElementById('toggle-icon-titles');
+    var toggleButton = document.getElementById('toggle-button-titles');
+
+    function toggleTitles() {
+        if (entryTitles.style.display === 'none') {
+            entryTitles.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            entryTitles.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+        }
+    }
+
+    toggleButton.addEventListener('click', toggleTitles);
+
+    if (entryTitles.value.trim() !== '') {
+        toggleTitles();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var entryDescription = document.getElementById('edit_description');
+    var toggleIcon = document.getElementById('toggle-icon-description');
+    var toggleButton = document.getElementById('toggle-button-desc');
+
+    function toggleDesc() {
+        if (entryDescription.style.display == 'none') {
+            entryDescription.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            entryDescription.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+        }
+    }
+    toggleButton.addEventListener('click', toggleDesc);
+
+    if (entryDescription.value.trim() !== '') {
+        toggleDesc();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var finishDateInput = document.getElementById('entry-finish-date');
+    var toggleIcon = document.getElementById('toggle-icon-date');
+    var toggleButton = document.getElementById('toggle-button-fin-date');
+
+    function toggleFinishDate() {
+        if (finishDateInput.style.display == 'none') {
+            finishDateInput.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            finishDateInput.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+        }
+    }
+    toggleButton.addEventListener('click', toggleFinishDate);
+
+    if (finishDateInput.value.trim() !== '') {
+        toggleFinishDate();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var inputTotalEpisodes = document.getElementById('total-episodes');
+    var toggleIcon = document.getElementById('toggle-icon-total-ep');
+    var toggleButton = document.getElementById('toggle-button-total-episodes');
+
+    function toggleTotalEpisodes() {
+        if (inputTotalEpisodes.style.display == 'none') {
+            inputTotalEpisodes.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            inputTotalEpisodes.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+            inputTotalEpisodes.value = null;
+        }
+    }
+
+    toggleButton.addEventListener('click', toggleTotalEpisodes);
+
+    if (inputTotalEpisodes.value.trim() !== '') {
+        toggleTotalEpisodes();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var inputCurrentEpisodes = document.getElementById('current-episodes');
+    var toggleIcon = document.getElementById('toggle-icon-cur-ep');
+    var toggleButton = document.getElementById('toggle-button-current-episodes');
+
+    function toggleCurrentEpisodes() {
+        if (inputCurrentEpisodes.style.display == 'none') {
+            inputCurrentEpisodes.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            inputCurrentEpisodes.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+            inputCurrentEpisodes.value = null;
+        }
+    }
+
+    toggleButton.addEventListener('click', toggleCurrentEpisodes);
+
+    if (inputCurrentEpisodes.value.trim() !== '') {
+        toggleCurrentEpisodes();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+
+    var inputFranchise = document.getElementById('franchise-input');
+    var toggleIcon = document.getElementById('toggle-icon-franchise');
+    var selectedOption = document.getElementById('franchise-input')
+    var addNewFranchise = document.getElementById('add-new-franchise');
+    var newFranchise = document.getElementById('new-franchise');
+    var toggleButton = document.getElementById('toggle-button-franchise');
+
+    function toggleFranchise() {
+        if (inputFranchise.style.display == 'none') {
+            inputFranchise.style.display = 'block';
+            toggleIcon.classList.remove('fa-plus');
+            toggleIcon.classList.add('fa-minus');
+        } else {
+            inputFranchise.style.display = 'none';
+            toggleIcon.classList.remove('fa-minus');
+            toggleIcon.classList.add('fa-plus');
+            selectedOption.value = '';
+            newFranchise.value = '';
+            addNewFranchise.style.display = 'none';
+        }
+    }
+
+    toggleButton.addEventListener('click', toggleFranchise);
+
+    if (inputFranchise.value.trim() !== '') {
+        toggleFranchise();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category-selection');
+    const typeSelectDiv = document.getElementById('type-selection-div');
+    const typeSelect = document.getElementById('type-selection');
+    const typeOptions = typeSelect.querySelectorAll('option[data-category-id]');
+
+    function updateTypeOptions(selectedCategoryId) {
+        typeOptions.forEach(option => option.style.display = 'none');
+        typeOptions.forEach(option => {
+            if (option.getAttribute('data-category-id') === selectedCategoryId) {
+                option.style.display = 'block';
+            }
+        });
+        typeSelectDiv.style.display = selectedCategoryId ? 'block' : 'none';
+    }
+
+    categorySelect.addEventListener('change', function() {
+        const selectedCategoryId = this.value;
+        typeSelect.selectedIndex = 0;
+        updateTypeOptions(selectedCategoryId);
+    });
+
+    const initialCategoryId = categorySelect.value;
+    if (initialCategoryId && initialCategoryId !== 'Select category') {
+        updateTypeOptions(initialCategoryId);
+    } else {
+        typeSelectDiv.style.display = 'none';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    let authorCount = 1;
+    const maxAuthors = 10;
+    const maxRoles = 3;
+
+    function updateAuthorFields() {
+        for (let i = 1; i <= authorCount; i++) {
+            let authorInput = document.getElementById(`author-input-${i}`);
+            let newAuthorDiv = document.getElementById(`add-new-author-${i}`);
+            let newAuthorInput = document.getElementById(`new-author-${i}`);
+            let hiddenInput = document.getElementById(`author-input-${i}-hidden`);
+
+            if (authorInput) {
+                authorInput.addEventListener('input', function() {
+                    let selectedOption = Array.from(authorInput.list.options).find(option => option.value === authorInput.value);
+                    if (selectedOption) {
+                        let dataValue = selectedOption.getAttribute('data-value');
+                        hiddenInput.value = dataValue || '';
+                    } else {
+                        hiddenInput.value = '';
+                    }
+
+                    if (authorInput.value === 'Not in list') {
+                        newAuthorDiv.style.display = 'block';
+                    } else {
+                        newAuthorDiv.style.display = 'none';
+                        newAuthorInput.value = '';
+                    }
+                });
+            }
+        }
+    }
+
+    function addAuthorField() {
+        if (authorCount < maxAuthors) {
+            authorCount++;
+            let authorsContainer = document.getElementById('authors-container');
+
+            let newAuthorField = `
+                <div class="mb-3 d-flex justify-content-left author-fields" id="author-field-${authorCount}">
+                    <div style="width: 300px;">
+                        <label for="author-input-${authorCount}">Author</label>
+                        <input autocomplete="off" list="author-select" placeholder="Author" id="author-input-${authorCount}" name="author-input-${authorCount}" class="form-control edit-control" style="width: 100%;">
+                        <input type="hidden" id="author-input-${authorCount}-hidden" name="author-hidden-${authorCount}">
+                        <div style="align-self: flex-end;">
+                            <button type="button" class="remove-author-btn" onclick="removeAuthorField(${authorCount})" style="background-color: transparent; border: none;">
+                                <i class="fas fa-minus" style="color: red;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="add-new-author-${authorCount}" style="padding-left: 15px; display: none;">
+                        <label for="new-author-${authorCount}" style="display: inline-block;">New author</label>
+                        <input placeholder="New author" class="form-control edit-control" type="text" id="new-author-${authorCount}" name="new-author-${authorCount}"/>
+                    </div>
+                    <div id="author-roles-container-${authorCount}" style="padding-left: 15px;">
+                        <div class="role-field">
+                            <label for="author-role-${authorCount}" style="display: inline-block;">Author role</label>
+                            <input placeholder="Author role" class="form-control edit-control" type="text" id="author-role-${authorCount}-1" name="author-role-${authorCount}-1"/>
+                        </div>
+                        <div style="align-self: flex-end; padding-bottom: 5px;">
+                            <button type="button" onclick="addAuthorRoleField(${authorCount})" style="background-color: transparent; border: none;">
+                                <i class="fas fa-plus" style="color: green;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            authorsContainer.insertAdjacentHTML('beforeend', newAuthorField);
+            updateAuthorFields();
+        } else {
+            alert("You can add up to 10 authors only.");
+        }
+    }
+
+
+    const authorsContainer = document.getElementById('authors-container');
+    if (!authorsContainer) return;
+    window.addAuthorField = addAuthorField;
+
+    window.removeAuthorField = function(id) {
+        let authorField = document.getElementById(`author-field-${id}`);
+        authorField.remove();
+        authorCount--;
+    };
+
+    window.addAuthorRoleField = function(authorId) {
+        let rolesContainer = document.getElementById(`author-roles-container-${authorId}`);
+        let roleCount = rolesContainer.querySelectorAll('.role-field').length;
+
+        if (roleCount < maxRoles) {
+            let newRoleField = `
+                <div class="role-field">
+                    <input placeholder="Author role" class="form-control edit-control" type="text" id="author-role-${authorId}-${roleCount + 1}" name="author-role-${authorId}-${roleCount + 1}"/>
+                    <button type="button" class="remove-role-btn" onclick="removeAuthorRoleField(${authorId}, ${roleCount + 1})" style="background-color: transparent; border: none;">
+                        <i class="fas fa-minus" style="color: red;"></i>
+                    </button>
+                </div>
+            `;
+
+            rolesContainer.insertAdjacentHTML('beforeend', newRoleField);
+        } else {
+            alert("You can add up to 3 roles per author only.");
+        }
+    };
+
+    window.removeAuthorRoleField = function(authorId, roleId) {
+        let roleField = document.getElementById(`author-role-${authorId}-${roleId}`).parentElement;
+        roleField.remove();
+    };
+
+    updateAuthorFields();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    var franchiseInput = document.getElementById('add-new-franchise');
+    var selectedOption = document.getElementById('franchise-input');
+    var newFranchise = document.getElementById('new-franchise');
+
+    function handleFranchiseChange() {
+        if (selectedOption.value == 'Not in list') {
+            franchiseInput.style.display = 'block';
+        } else {
+            franchiseInput.style.display = 'none';
+            newFranchise.value = '';
+        }
+    }
+
+    selectedOption.addEventListener('input', handleFranchiseChange);
+
+    handleFranchiseChange();
+});
+document.getElementById("upload_image").addEventListener("change", function() {
+    var fileName = this.files[0].name;
+    document.getElementById("image-name").textContent = fileName;
+});
+document.addEventListener("DOMContentLoaded", function() {
+    const removeButton = document.querySelector('.remove-button');
+
+    removeButton.addEventListener('click', function() {
+        document.getElementById('image-name').innerHTML = '';
+        document.getElementById('material-value').value = '';
+        removeButton.style.display = 'none';
+    });
+});
+function scrollToForm() {
+    var form = document.getElementById('post-form');
+    var postMessage = document.getElementById("post_message").value;
+    var materialValue = document.getElementById("material-value").value;
+    if (materialValue != '' || postMessage != '') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start'});
+    }
+}
+function toggleFranchise() {
+    const franchiseInput = document.getElementById('franchise-input');
+    franchiseInput.style.display = franchiseInput.style.display === 'none' ? 'block' : 'none';
+}
+document.querySelector('#franchise-input').addEventListener('input', function(e) {
+    var input = e.target,
+        list = input.getAttribute('list'),
+        options = document.querySelectorAll('#' + list + ' option'),
+        hiddenInput = document.getElementById(input.getAttribute('id') + '-hidden'),
+        inputValue = input.value;
+
+    hiddenInput.value = inputValue;
+
+    for(var i = 0; i < options.length; i++) {
+        var option = options[i];
+
+        if(option.value == inputValue) {
+            hiddenInput.value = option.getAttribute("data-value");
+            break;
+        }
+    }
+});
+{% if existing_title and not confirmed %}
+  function confirmSubmit() {
+    var existingTitle = "{{ existing_title }}";
+    if (existingTitle) {
+      return confirm('Are you sure you are not adding existing entry: "{{ existing_title }}"?');
+    }
+    return true;
+  }
+ {% endif %}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // This function iterates over each author field set
+    for (let i = 1; i <= 10; i++) {
+        const authorField = document.getElementById(`author-field-${i}`);
+        if (!authorField) continue;  // Skip if the field does not exist
+
+        const authorInput = document.getElementById(`author-input-${i}`);
+        const hiddenInput = document.getElementById(`author-input-${i}-hidden`);
+        const predefinedValue = authorField.dataset.predefinedValue;
+        const predefinedName = authorField.dataset.predefinedName;
+
+        // Set predefined values if they exist
+        if (predefinedValue && predefinedName) {
+            authorInput.value = predefinedName;
+            hiddenInput.value = predefinedValue;
+        }
+
+        // Event listener to update hidden input based on selected datalist option
+        authorInput.addEventListener('input', function() {
+            const selectedOption = Array.from(document.querySelectorAll(`#author-select option`)).find(option => option.value === authorInput.value);
+            if (selectedOption) {
+                hiddenInput.value = selectedOption.getAttribute('data-value');
+            } else {
+                hiddenInput.value = ''; // Clear if no match or if "Not in list" is selected
+            }
+        });
+    }
+});
+
+
+</script>
+{% endblock content %}

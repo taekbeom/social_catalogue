@@ -1,0 +1,45 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="centered-content-login">
+    <div class="login-form">
+        <form novalidate method="POST">
+            {% csrf_token %}
+            <div class="form-outline mb-4">
+                <input type="text" id="form_username" name="username" placeholder="Username" class="form-control login-control" />
+                {% for error in form.username.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-outline mb-4">
+                <input type="password" id="form_pswd" name="password" placeholder="Password" class="form-control login-control" />
+                {% for error in form.password.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-outline mb-4">
+                {% for error in form.non_field_errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row mb-4 d-flex justify-content-center">
+                <div class="col">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="true" name="form-remember" id="form-remember"/>
+                        <label class="form-check-label" for="form-remember"> Remember me </label>
+                    </div>
+                </div>
+                <div class="col">
+                    <a href="{% url 'password_reset' %}">Forgot password?</a>
+                </div>
+            </div>
+
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ next }}">
+
+            <button type="submit" class="btn btn-primary btn-block mb-4">Sign in</button>
+        </form>
+    </div>
+</div>
+{% endblock content%}

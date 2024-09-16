@@ -1,0 +1,315 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<h3 class="mt-3 mb-3" style="margin-left: 50px; margin-right; overflow-wrap: break-word;">{{ entry.10|capfirst }} - {{ entry.0 }}</h3>
+<div class="container-profile">
+    <div class="card card-profile">
+        <div class="card-body">
+            {% if authority %}
+                <form method="get" action="{% url 'app_edit_entry' entry_id %}">
+                    <button type="submit" class="btn btn-secondary" style="float: right;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </form>
+            {% endif %}
+            <div class="mb-2" style="text-align: center;  padding: 0 50px;">
+                <div class="position-relative p-1">
+                    <img id="edit_image_preview" src="{{ MEDIA_URL }}catalogue/{{entry.8}}" alt="img" class="img-thumbnail edit-control" style="width: 300px;" />
+                </div>
+                <h5 class="mt-2 mb-1">Alternative titles</h5>
+                <p>{{ entry.1 }}</p>
+                <p>From {%if entry.2%}{{entry.2|date:"Y.m.d"}}{%elif entry.4%}{{entry.4}}{%else%}?{% endif %} to {% if entry.3 %}{{entry.3|date:"Y.m.d"}}{% else %}?{% endif %}</p>
+                <p>Type: {% if entry.9 %}{{ entry.9 }}{% else %}?{% endif %}</p>
+                <p>{% if entry.10 == 'comics' or entry.10 == 'novel' %}Chapters{% else %}Episodes{% endif %}:
+                    {% if entry.12 or entry.12 == 0 %}{{entry.12}}{% else %}?{% endif %}/{% if entry.13 %}{{entry.13}}{% else %}?{% endif %}</p>
+                <p>Rating: {% if total_rating %}{{ total_rating }}{% else %}?{% endif %}</p>
+                <p>Country: {% if entry.6 %}{{ entry.6 }}{% else %}?{% endif %}</p>
+                <p>Production: {% if entry.7 %}{{ entry.7 }}{% else %}?{% endif %}</p>
+                <p>Tags: {{ entry_tags }}</p>
+                <p>Authors: {% if not entry_authors %}?{% endif %}</p>
+                {% for entry_author in entry_authors %}
+                    <p>{{ entry_author.0 }} as {{ entry_author.1 }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card card-profile">
+        <div class="card-body card-body-list p-4">
+            <div class="row">
+                <div class="col-7">
+                    <form method="get" action="{% url 'app_update_mark' entry_id %}">
+                        <label for="dropdown-entry">Select action</label>
+                        <select name="dropdown-mark" id="dropdown-entry" class="form-select dropdown-toggle" style="text-transform: capitalize;" onchange="this.form.submit()">
+                            {% if logged_in %}
+                                <option selected disabled hidden>Add to list</option>
+                                <option class="dropdown-item" value="">None</option>
+                                {% for mark in marks %}
+                                    {% if mark.2 %}
+                                        <option class="dropdown-item" selected value="{{ mark.1 }}">{{ mark.0 }}</option>
+                                    {% else %}
+                                        <option class="dropdown-item" value="{{ mark.1 }}">{{ mark.0 }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <option selected disabled hidden>Log in to add to list</option>
+                            {% endif %}
+                        </select>
+                    </form>
+                </div>
+                <div class="col-5">
+                    <form method="get" action="{% url 'app_update_rate' entry_id %}">
+                        <label for="dropdown-rate">Rate an entry</label>
+                        <select name="dropdown-rate" id="dropdown-rate" class="form-select dropdown-toggle" style="text-transform: capitalize;" onchange="this.form.submit()">
+                            {% if logged_in %}
+                                <option selected disabled hidden>Rate</option>
+                                <option class="dropdown-item" value="">None</option>
+                                {% for i in rating %}
+                                    {% if rate and i == rate %}
+                                        <option class="dropdown-item" selected value="{{i}}">{{ i }}</option>
+                                    {% else %}
+                                        <option class="dropdown-item" value="{{i}}">{{ i }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <option selected disabled hidden>Log in to rate</option>
+                            {% endif %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+            <div class="p-4">
+                <h3 class="mt-3" style="text-align: center;">Description</h3>
+                <p>{{ entry.5|linebreaksbr }}</p>
+                <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/js/multi-select-tag.js"></script>
+                <div class="row mt-4 mb-4 mx-auto d-flex align-items-center justify-content-center">
+                    <div class="col-8">
+                        <form method="get" id="form-marks" action="{% url 'app_update_additional_mark' entry_id %}">
+                            <label for="catalogue-list">Additional lists</label>
+                            <select name="catalogue-list" id="catalogue-list" multiple onchange="this.form.submit()">
+                                {% if logged_in %}
+                                    {% for mark in non_default_marks %}
+                                        {% if mark.2 %}
+                                            <option value="{{ mark.1 }}" selected>{{ mark.0 }}</option>
+                                        {% else %}
+                                            <option value="{{ mark.1 }}">{{ mark.0 }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-2 mt-4">
+                        <button type="submit" class="btn btn-primary" form="form-marks" style="margin: 0 auto;">Save</button>
+                    </div>
+                </div>
+                {% if entry_links %}
+                    <p>Related: </p>
+                    {% for entry_link in entry_links %}
+                        <p>{% if entry.11 != entry_link.2 %}Adaptation{% else %}Directly{% endif %} - <a href="{% url 'app_entry' entry_link.0 %}">{{ entry_link.1 }}</a></p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="card card-custom-post">
+        <div class="card-body">
+            <form id="post-form" novalidate method="POST">
+                {% csrf_token %}
+                <div class="mb-2">
+                    <input type="hidden" name="review_value_upload" value="{% if review_var %}{{ review_var.id }}{% endif %}">
+                    <input type="hidden" name="review_reply" value="{% if review_reply %}{{ review_reply }}{% endif %}">
+                    <input type="hidden" name="review_display_reply" value="{% if review_display_reply %}{{ review_display_reply }}{% endif %}">
+                    {% if review_display_reply %}
+                        <button type="button" class="btn" onclick="highlightPost('{{ review_reply }}')">Reply</button>
+                    {% endif %}
+                    <textarea id="post_message" placeholder="Text" class="form-control edit-control"
+                              name="review_message" style="resize: none;"
+                              cols="10" rows="5">{% if review_var.message %}{{ review_var.message }}{% endif %}</textarea>
+                </div>
+                <div class="row">
+                    <div class="mt-2">
+                        <button type="submit" name="submit-btn" value="button-upload" class="btn btn-primary btn-block float-end">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="mt-4">
+    {% for review in reviews_page.object_list %}
+        <div class="card card-custom-comment mb-4" id="post-{{ review.6 }}">
+            <div class="row g-0">
+                <div class="col-2" style="margin: auto;">
+                    <img src="{{ MEDIA_URL }}profile_pics/{% if review.3 %}{{ review.3 }}{% else %}default.jpg{% endif %}"
+                         class="img-fluid circle img-thumbnail rounded-circle" style="width: 100px;" alt="img">
+                </div>
+                <div class="col-10" style="border-left: 1px solid #ced4da;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <a href="{% if review.4 %}{% url 'app_profile' review.4 %}{% else %}#{% endif %}"
+                           style="color: black; text-decoration: none;">
+                            <h5 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{% if review.2 %}{{ review.2 }}{% else %}Deleted{% endif %}</h5>
+                        </a>
+                        <div class="d-flex align-items-center">
+                            {% if logged_in and user.id == review.5 %}
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="review_value_edit" value="{{ review.6 }}">
+                                    <button type="submit" name="submit-btn" value="button-edit" class="btn edit-button"
+                                            style="padding: 0; margin-right: 5px;">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'app_delete_review' entry_id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="review_value" value="{{ review.6 }}">
+                                    <button type="submit" class="btn" style="padding: 0; margin-right: 20px; color: red;"
+                                        onclick="return confirm('Are you sure you want to delete review?')">
+                                        <i class="fa fa-remove"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                            <span class="text-muted">{{ review.1|date:"Y.m.d G:i" }}</span>
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="review_value_display_reply" value="{{ review.6 }}">
+                                <button type="submit" class="btn" name="submit-btn" value="button-reply" style="padding: 0; margin-left: 20px;">
+                                    <i class="fa fa-reply"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if review.0 %}
+                            <p id="post-content" class="text-limit">{{ review.0|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% for k, reviews_reply in reviews_replies %}
+            {% if k == review.6 %}
+                {% for review_reply in reviews_reply %}
+                <div style="margin-left: 10%;">
+                    <div class="card card-custom-comment mb-4" id="post-{{ review_reply.6 }}">
+                        <div class="row g-0">
+                            <div class="col-2" style="margin: auto;">
+                                <img src="{{ MEDIA_URL }}profile_pics/{% if review_reply.3 %}{{ review_reply.3 }}{% else %}default.jpg{% endif %}"
+                                     class="img-fluid circle img-thumbnail rounded-circle" style="width: 100px;" alt="img">
+                            </div>
+                            <div class="col-10" style="border-left: 1px solid #ced4da;">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <a href="{% if review_reply.4 %}{% url 'app_profile' review_reply.4 %}{% else %}#{% endif %}"
+                                       style="color: black; text-decoration: none;">
+                                        <h5 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{% if review_reply.2 %}{{ review_reply.2 }}{% else %}Deleted{% endif %}</h5>
+                                    </a>
+                                    <div class="d-flex align-items-center">
+                                        {% if logged_in and user.id == review_reply.5 %}
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="review_value_edit" value="{{ review_reply.6 }}">
+                                                <button type="submit" name="submit-btn" value="button-edit" class="btn edit-button"
+                                                        style="padding: 0; margin-right: 5px;">
+                                                    <i class="fa fa-edit"></i>
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'app_delete_review' entry_id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="review_value" value="{{ review_reply.6 }}">
+                                                <button type="submit" class="btn" style="padding: 0; margin-right: 20px; color: red;"
+                                                    onclick="return confirm('Are you sure you want to delete review?')">
+                                                    <i class="fa fa-remove"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        <span class="text-muted">{{ review_reply.1|date:"Y.m.d G:i" }}</span>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="review_value_reply" value="{{ review_reply.6 }}">
+                                            <input type="hidden" name="review_value_display_reply" value="{{ review.6 }}">
+                                            <button type="submit" class="btn" name="submit-btn" value="button-reply" style="padding: 0; margin-left: 20px;">
+                                                <i class="fa fa-reply"></i>
+                                            </button>
+                                        </form>
+                                        {% if review_reply.7 %}
+                                            <button type="button" class="btn" style="padding: 0;" onclick="highlightPost('{{ review_reply.7 }}')">to</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if review_reply.0 %}
+                                        <p id="post-content" class="text-limit">{{ review_reply.0|linebreaksbr }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+</div>
+<div class="container container-rest-news mt-4">
+    <div class="pagination bold-font">
+        <span class="step-links">
+            {% if posts_page.has_previous %}
+                <a href="?page=1" class="btn btn-outline-info mb-4">1</a>
+                <a href="?page={{ posts_page.previous_page_number }}" class="btn btn-outline-info mb-4">Previous</a>
+            {% endif %}
+            {% for num in posts_page.paginator.page_range %}
+                {% if posts_page.number == num %}
+                    <a href="?page={{ num }}" class="btn btn-info mb-4">{{ num }}</a>
+                {% elif num > posts_page.number|add:'-3' and num < posts_page.number|add:'3' and num != 1 and num != posts_page.paginator.num_pages %}
+                    <a href="?page={{ num }}" class="btn btn-outline-info mb-4">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if posts_page.has_next %}
+                <a href="?page={{ posts_page.next_page_number }}" class="btn btn-outline-info mb-4">Next</a>
+                <a href="?page={{ posts_page.paginator.num_pages }}" class="btn btn-outline-info mb-4">{{ posts_page.paginator.num_pages }}</a>
+            {% endif %}
+        </span>
+    </div>
+</div>
+<script>
+    new MultiSelectTag('catalogue-list')
+
+function scrollToForm() {
+    var form = document.getElementById('post-form');
+    var postMessage = document.getElementById("post_message").value;
+    var materialValue = document.getElementById("material-value").value;
+    if (materialValue != '' || postMessage != '') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start'});
+    }
+}
+window.addEventListener('load', scrollToForm);
+const postContents = document.querySelectorAll('#post-content');
+postContents.forEach((postContent) => {
+    const showMoreBtn = document.createElement('span');
+    showMoreBtn.textContent = 'Show full';
+    showMoreBtn.style.color = 'blue';
+    showMoreBtn.className = 'show-more-btn';
+    postContent.parentNode.insertBefore(showMoreBtn, postContent.nextSibling);
+    if (postContent.scrollHeight <= postContent.clientHeight) {
+        showMoreBtn.style.display = 'none';
+    }
+    showMoreBtn.addEventListener('click', () => {
+        postContent.style.overflow = 'visible';
+        postContent.style.textOverflow = 'clip';
+        postContent.style.webkitLineClamp = 'unset';
+        postContent.style.height = 'auto';
+        showMoreBtn.style.display = 'none';
+    });
+});
+    function highlightPost(postId) {
+        var postElement = document.getElementById('post-' + postId);
+        postElement.style.backgroundColor = 'yellow';
+
+        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(function() {
+            postElement.style.backgroundColor = '';
+        }, 1000);
+    }
+</script>
+{% endblock content %}

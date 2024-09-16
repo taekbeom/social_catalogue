@@ -1,0 +1,45 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="container-edit">
+    <div class="card border-dark card-edit edit-form mt-4">
+        <form novalidate method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-5">
+                <input type="text" id="edit_title" placeholder="Title" class="form-control edit-control"
+                       name="{{ form.title.name }}" value="{{ form.title.value|default:'' }}"  />
+                {% for error in form.title.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5">
+                <textarea id="edit_message" placeholder="Message" class="form-control edit-control"
+                          name="{{ form.message.name }}" style="resize: none;"
+                          cols="10" rows="7">{{ form.message.value|default:'' }}</textarea>
+                {% for error in form.message.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-5 col-4" style="width: 300px;">
+                <div class="row">
+                    <div class="ml-auto d-flex align-items-center">
+                        <input type="file" id="upload_image" name="upload_image" class="form-control d-none"/>
+                        <label for="upload_image" class="btn btn-primary mt-2 text-center" style="width: 150px; height: 40px;">Choose Image</label>
+                    </div>
+                    <div id="image-name" class="text-muted"></div>
+                </div>
+                {% if not image_is_valid %}
+                    <div class="text-danger">Invalid Image</div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin: 0 auto;">Save</button>
+        </form>
+    </div>
+</div>
+<script>
+    document.getElementById("upload_image").addEventListener("change", function() {
+        var fileName = this.files[0].name;
+        document.getElementById("image-name").textContent = fileName;
+    });
+</script>
+{% endblock content %}

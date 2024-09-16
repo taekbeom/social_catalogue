@@ -1,1 +1,144 @@
 {% extends "catalogue/base.html" %}
+{% block content %}
+<div class="container">
+    <form method="get" id="search-form-catalogue" action="{% url 'app_catalogue' %}">
+        <div class="row mt-3 justify-content-center">
+            <div class="col">
+                <div class="search-border border border-dark rounded p-3">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <select name="dropdown" id="dropdown-cat" class="form-select dropdown-toggle" style="text-transform: capitalize;">
+                                <option class="dropdown-item" value="all">All</option>
+                                {% for entry_category in entry_categories %}
+                                    <option class="dropdown-item" value="{{entry_category.0}}">{{ entry_category.1 }}</option>
+                                {% endfor %}
+                                <option class="dropdown-item" value="author">Author</option>
+                                <option class="dropdown-item" value="user">User</option>
+                            </select>
+                        </div>
+                        <input type="search" name="entry-search" id="form2" class="form-control" value="{{ search_string|default:'' }}" placeholder="Search"/>
+                        <button type="submit" class="btn btn-primary custom-search-btn px-3 me-2" data-mdb-ripple-init>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <a href="{% url 'app_add_entry' %}"><button type="submit" class="btn btn-dark mt-2" style="font-size: 13px;">Add entry</button></a>
+    {% for category, entries in grouped_entries %}
+        {% if perform_search %}
+            <h3 style="margin-top: 20px; text-transform: capitalize;">{{ category }}</h3>
+            <div class="row row-catalogue-search ">
+                {% for entry in entries %}
+                    <div class="card border-dark card-catalogue">
+                        {% if category == 'user' %}
+                            <a href="{% url 'app_profile' entry.2 %}" class=" card-text-catalogue">{{ entry.0 }}</a>
+                            <img class="img-catalogue-user" src="{{ MEDIA_URL }}profile_pics/{{ entry.1 }}" alt="img"/>
+                        {% elif category == 'author' %}
+                            <a href="#" class=" card-text-catalogue">{{ entry.0 }}</a>
+                            <img class="img-catalogue-user" src="{{ MEDIA_URL }}author/{{ entry.1 }}" alt="img"/>
+                        {% else %}
+                            <a href="{% url 'app_entry' entry.2 %}" class="card-text-catalogue">{{ entry.0 }}</a>
+                            <img class="img-catalogue" src="{{ MEDIA_URL }}catalogue/{{ entry.1 }}" alt="cover"/>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h3 style="margin-top: 20px; text-transform: capitalize;">{{ category }}</h3>
+            <div class="row row-catalogue" id="catalogue-scroll-{{ category }}">
+                {% for entry in entries %}
+                    <div class="card border-dark card-catalogue">
+                        <a href="{% url 'app_entry' entry.2 %}" class=" card-text-catalogue">{{ entry.0 }}</a>
+                        <img class="img-catalogue" src="{{ MEDIA_URL }}catalogue/{{ entry.1 }}" alt="cover"/>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="scroll-buttons">
+                <button id="scroll-left-{{ category }}" class="scroll-btn">&lt;</button>
+                <button id="scroll-right-{{ category }}" class="scroll-btn">&gt;</button>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    {% for category, entries in grouped_entries %}
+        const catalogueScroll{{ category }} = document.getElementById("catalogue-scroll-{{ category }}");
+        const scrollLeftBtn{{ category }} = document.getElementById("scroll-left-{{ category }}");
+        const scrollRightBtn{{ category }} = document.getElementById("scroll-right-{{ category }}");
+
+        scrollLeftBtn{{ category }}.style.visibility = "hidden";
+
+        scrollLeftBtn{{ category }}.addEventListener("click", function() {
+            catalogueScroll{{ category }}.scrollBy({
+                left: -250,
+                behavior: "smooth"
+            });
+        });
+
+        scrollRightBtn{{ category }}.addEventListener("click", function() {
+            catalogueScroll{{ category }}.scrollBy({
+                left: 250,
+                behavior: "smooth"
+            });
+        });
+
+        catalogueScroll{{ category }}.addEventListener("scroll", function() {
+            const scrollLeft = catalogueScroll{{ category }}.scrollLeft;
+            const scrollWidth = catalogueScroll{{ category }}.scrollWidth;
+            const clientWidth = catalogueScroll{{ category }}.clientWidth;
+
+            if (scrollLeft === 0) {
+                scrollLeftBtn{{ category }}.style.visibility = "hidden";
+                scrollRightBtn{{ category }}.style.marginRight = "0"; // Adjust the position of the right arrow
+            } else {
+                scrollLeftBtn{{ category }}.style.visibility = "visible";
+                scrollRightBtn{{ category }}.style.marginRight = ""; // Reset the position of the right arrow
+            }
+
+            if (scrollLeft + clientWidth >= scrollWidth) {
+                scrollRightBtn{{ category }}.style.visibility = "hidden";
+            } else {
+                scrollRightBtn{{ category }}.style.visibility = "visible";
+            }
+        });
+
+        catalogueScroll{{ category }}.addEventListener("wheel", function(event) {
+            const scrollDistance = event.deltaX * 0.6;
+            if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+                event.preventDefault();
+                catalogueScroll{{ category }}.scrollBy({
+                    left: scrollDistance,
+                });
+            }
+        });
+
+    {% endfor %}
+});
+    const dropdown = document.querySelector('select[name="dropdown"]');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const dropdownParam = urlParams.get('dropdown');
+
+    if (dropdownParam) {
+        for (const option of dropdown.options) {
+            if (option.value === dropdownParam) {
+                option.selected = true;
+                break;
+            }
+        }
+    }
+    document.getElementById('search-form-catalogue').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        var dropdownValue = document.getElementById('dropdown-cat').value;;
+        var inputValue = document.getElementById('form2').value;
+
+        var url = "{% url 'app_catalogue' %}?dropdown=" + dropdownValue + "&entry-search=" + inputValue;
+
+        window.location.href = url;
+    });
+</script>
+{% endblock content %}

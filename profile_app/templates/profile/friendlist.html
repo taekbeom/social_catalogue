@@ -1,0 +1,38 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+{% if active %}
+    <div class="container container-friend-lists mt-3">
+        <a href="{% url 'app_friend_list' profile_id %}?user_list=friends" style="color: {% if user_list == 'friends' %}red;{% endif %}" id="friends-link">Friends</a>
+        {% if cur_user %}
+            <a href="{% url 'app_friend_list' profile_id %}?user_list=requests" style="color: {% if user_list == 'requests' %}red;{% endif %}" id="requests-link">Requests</a>
+            <a href="{% url 'app_friend_list' profile_id %}?user_list=out_requests" style="color: {% if user_list == 'out_requests' %}red;{% endif %}" id="out-requests-link">Outgoing requests</a>
+            <a href="{% url 'app_friend_list' profile_id %}?user_list=following" style="color: {% if user_list == 'following' %}red;{% endif %}" id="following-link">Following</a>
+            <a href="{% url 'app_friend_list' profile_id %}?user_list=block_list" style="color: {% if user_list == 'block_list' %}red;{% endif %}" id="blocklist-link">Block List</a>
+        {% endif %}
+    </div>
+    {% if not users %}
+        <h3 class="mt-4">No one here</h3>
+    {% endif %}
+    <div class="mt-4 justify-content-center">
+        {% for user_ in users %}
+            <div class="card card-custom-friend mb-4" style="display: flex; flex-direction: column; padding-left: 30px; padding-right: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="text-align: left; overflow: hidden; padding-right: 30px; padding-bottom: 10px;">
+                        <a href="{% url 'app_profile' user_.2 %}"><h5 style="margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ user_.0 }}</h5></a>
+                        <img src="{{ MEDIA_URL }}profile_pics/{{ user_.1 }}" alt="img" style="border: 2px solid black; max-width: 50px;">
+                    </div>
+                    {% if user_list == 'friends' %}
+                        {% if cur_user or not private %}
+                            <div style="text-align: right; white-space: nowrap; padding-top: 10px;">
+                                <span class="text-muted">Friends since: {{ user_.3|date:"Y.m.d" }}</span>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <h3 class="mt-2">User profile was deleted</h3>
+{% endif %}
+{% endblock %}

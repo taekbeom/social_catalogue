@@ -1,0 +1,18 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="container-news-edit">
+    <div class="mt-4 mb-4 card card-news border-dark text-center card-custom-bg" style="position: relative;">
+        {% if user.user_role.role_name == 'admin' or user.user_role.role_name == 'moderator' %}
+            <form method="get" action="{% url 'app_edit_news' news.id %}" style="position: absolute; top: 20px; left: 20px;">
+                <button type="submit" class="btn btn-secondary">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </form>
+        {% endif %}
+        <span class="text-muted" style="text-align: right">Added on: {{ news.add_date|date:"Y.m.d G:i" }}</span>
+        <h4 class="card-title">{{ news.title }}</h4>
+        <p class="card-text">{{ news.message }}</p>
+        <img class="img-news2" src="{{MEDIA_URL}}news/{{news.image}}" alt="img" loading="lazy"/>
+    </div>
+</div>
+{% endblock content %}

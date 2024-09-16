@@ -1,0 +1,129 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<div class="container-edit">
+    <div class="card border-dark card-edit edit-form mt-4">
+        <form novalidate method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-5">
+                <input type="text" id="edit_username" placeholder="Username" class="form-control edit-control"
+                       name="{{ u_form.username.name }}" value="{{ u_form.username.value|default:'' }}"  />
+                {% for error in u_form.username.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5">
+                <input type="email" id="edit_email" placeholder="Email" class="form-control edit-control"
+                       name="{{ u_form.new_email.name }}" value="{{ user.email|default:'' }}"  />
+                {% for error in u_form.new_email.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5">
+                <textarea id="edit_description" placeholder="Description" class="form-control edit-control"
+                          name="{{ p_form.description.name }}" style="resize: none;"
+                          cols="10" rows="5">{{ p_form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-5">
+                <input type="password" id="edit_pswd" placeholder="Password" class="form-control edit-control"
+                       name="{{ u_form.password.name }}" />
+                {% for error in u_form.password.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5">
+                <input type="password" id="edit_reenter_pswd" placeholder="Re-enter Password"
+                       class="form-control edit-control"
+                       name="{{ u_form.password2.name }}" />
+                {% for error in u_form.password2.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-5 col-4" style="width: 300px;">
+              <div class="position-relative">
+                <img id="edit_image_preview" src="{% if profile.picture %}{{ MEDIA_URL }}profile_pics/{{ profile.picture }}{% else %}https://via.placeholder.com/150{% endif %}" alt="img" class="img-thumbnail edit-control" style="width: 150px; height: 150px; object-fit: cover;" />
+              </div>
+              <div class="ml-auto d-flex align-items-center">
+                <input type="file" id="edit_image_input" name="edit_image_input" class="form-control d-none" onchange="previewImage(event)" />
+                <label for="edit_image_input" class="btn btn-primary mt-2 text-center" style="width: 150px; height: 40px;">Choose Image</label>
+              </div>
+                {% if not image_is_valid %}
+                    <div class="text-danger">Invalid Image</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex flex-wrap justify-content-center">
+                <div class="mb-2 form-check col-lg-4 col-md-6 col-sm-12 d-flex justify-content-center">
+                    {% if p_form.active.value %}
+                        <input class="form-check-input" type="checkbox" value="true" name="{{p_form.active.name}}" id="edit-delete" />
+                    {% else %}
+                        <input class="form-check-input" type="checkbox" checked value="true" name="{{p_form.active.name}}" id="edit-delete" />
+                    {% endif %}
+                  <label class="form-check-label" style="padding-left: 1.0em;" for="edit-delete"> Disable profile </label>
+                </div>
+                <div class="mb-2 form-check col-lg-4 col-md-6 col-sm-12 d-flex justify-content-center">
+                    {% if p_form.private.value %}
+                        <input class="form-check-input" type="checkbox" checked value="true" name="{{p_form.private.name}}" id="edit-private" />
+                    {% else %}
+                        <input class="form-check-input" type="checkbox" value="true" name="{{p_form.private.name}}" id="edit-private" />
+                    {% endif %}
+                  <label class="form-check-label" style="padding-left: 1.0em;" for="edit-private"> Hide profile </label>
+                </div>
+                <div class="mb-2 form-check col-lg-4 col-md-6 col-sm-12 d-flex justify-content-center">
+                    {% if p_form.closed.value %}
+                        <input class="form-check-input" type="checkbox" checked value="true" name="{{p_form.closed.name}}" id="edit-closed" />
+                    {% else %}
+                        <input class="form-check-input" type="checkbox" value="true" name="{{p_form.closed.name}}" id="edit-closed" />
+                    {% endif %}
+                  <label class="form-check-label" style="padding-left: 1.0em;" for="edit-closed"> Close comments </label>
+                </div>
+              </div>
+            </div>
+
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin: 0 auto;">Save</button>
+        </form>
+    </div>
+</div>
+<script>
+function previewImage(event) {
+    var input = event.target;
+    var reader = new FileReader();
+
+    reader.onload = function(){
+        var img = new Image();
+        img.onload = function() {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+
+            var maxDimension = 300;
+            var aspectRatio = img.width / img.height;
+
+            if (img.width > img.height) {
+                canvas.width = maxDimension;
+                canvas.height = maxDimension / aspectRatio;
+            } else {
+                canvas.height = maxDimension;
+                canvas.width = maxDimension * aspectRatio;
+            }
+
+            context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            var dataURL = canvas.toDataURL('image/jpeg');
+
+            var imgElement = document.getElementById('edit_image_preview');
+            imgElement.src = dataURL;
+        };
+
+        img.src = reader.result;
+    };
+
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock content %}
